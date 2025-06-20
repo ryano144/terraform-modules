@@ -1,0 +1,129 @@
+{
+  "module_roots": [
+    "generics/utilities/",
+    "providers/aws/collections/",
+    "providers/aws/primitives/",
+    "providers/aws/references/",
+    "providers/github/collections/",
+    "providers/github/primitives/",
+    "providers/github/references/",
+    "skeletons/"
+  ],
+  "module_types": {
+    "skeleton": {
+      "path_patterns": ["skeletons/*"],
+      "policy_dir": "policies/opa/terraform/module_types/skeleton"
+    },
+    "utility": {
+      "path_patterns": ["generics/utilities/*"],
+      "policy_dir": "policies/opa/terraform/module_types/utility"
+    },
+    "primitive": {
+      "path_patterns": ["providers/*/primitives/*"],
+      "policy_dir": "policies/opa/terraform/module_types/primitive"
+    },
+    "collection": {
+      "path_patterns": ["providers/*/collections/*"],
+      "policy_dir": "policies/opa/terraform/module_types/collection"
+    },
+    "reference": {
+      "path_patterns": ["providers/*/references/*"],
+      "policy_dir": "policies/opa/terraform/module_types/reference"
+    }
+  },
+  "scripts": {
+    "terraform_file_collector": "terraform-file-collector",
+    "temp_file_pattern": "terraform-files-*.json",
+    "go_unit_test": "./scripts/go-unit-test/main.go",
+    "rego_unit_test": "./scripts/rego-unit-test/main.go",
+    "excluded_dirs": [".terraform", ".git", "node_modules", ".terragrunt-cache"],
+    "important_dirs": ["examples", "tests"],
+    "directory_marker": "directory",
+    "lint_directories": [
+      "scripts/detect-proposed-git-repo-changes",
+      "scripts/go-format",
+      "scripts/go-lint",
+      "scripts/go-unit-test",
+      "scripts/install-tools",
+      "scripts/module-type-validator",
+      "scripts/module-validator",
+      "scripts/rego-unit-test",
+      "scripts/terraform-file-collector"
+    ]
+  },
+  "rego_tests": [
+    "tests/opa/unit/global",
+    "tests/opa/unit/terraform/module",
+    "tests/opa/unit/terraform/module_types",
+    "tests/opa/unit/terraform/provider"
+  ],
+  "rego_policy_dirs": {
+    "tests/opa/unit/global": "policies/opa/global",
+    "tests/opa/unit/terraform/module": "policies/opa/terraform/module",
+    "tests/opa/unit/terraform/module_types": "policies/opa/terraform/module_types",
+    "tests/opa/unit/terraform/provider": "policies/opa/terraform/provider"
+  },
+  "rego_helpers_dir": "tests/opa/unit/helpers",
+  "module_validator_additional_policies": [
+    "tests/opa/unit/terraform/module",
+    "tests/opa/unit/terraform/provider"
+  ],
+  "coverage_groups": [
+    {
+      "name": "Go Unit Test",
+      "emoji": "🧪",
+      "outputFile": "go-unit-test.out",
+      "testPath": "./scripts/go-unit-test",
+      "coverPkg": "./scripts/go-unit-test"
+    },
+    {
+      "name": "Detect Proposed Git Repo Changes",
+      "emoji": "🔍",
+      "outputFile": "detect-proposed-git-repo-changes.out",
+      "testPath": "./scripts/detect-proposed-git-repo-changes",
+      "coverPkg": "./scripts/detect-proposed-git-repo-changes"
+    },
+    {
+      "name": "Install Tools",
+      "emoji": "🔧",
+      "outputFile": "go-unit-test.out",
+      "testPath": "./scripts/go-unit-test",
+      "coverPkg": "./scripts/go-unit-test"
+    },
+    {
+      "name": "Module Type Validator",
+      "emoji": "✅",
+      "outputFile": "module-type-validator.out",
+      "testPath": "./scripts/module-type-validator",
+      "coverPkg": "./scripts/module-type-validator"
+    },
+    {
+      "name": "Module Validator",
+      "emoji": "🔎",
+      "outputFile": "module-validator.out",
+      "testPath": "./scripts/module-validator",
+      "coverPkg": "./scripts/module-validator"
+    },
+    {
+      "name": "Terraform File Collector",
+      "emoji": "📁",
+      "outputFile": "terraform-file-collector.out",
+      "testPath": "./scripts/terraform-file-collector",
+      "coverPkg": "./scripts/terraform-file-collector"
+    },
+    {
+      "name": "Lint",
+      "emoji": "🧹",
+      "outputFile": "lint.out",
+      "testPath": "./scripts/go-lint",
+      "coverPkg": "./scripts/go-lint"
+    },
+    {
+      "name": "Rego Unit Test",
+      "emoji": "🔍",
+      "outputFile": "rego-unit-test.out",
+      "testPath": "./scripts/rego-unit-test",
+      "coverPkg": "./scripts/rego-unit-test"
+    }
+  ]
+}
