@@ -2,10 +2,18 @@
 
 ## 1. PR Validation Entry Point (`pr-validation.yml`)
 **Trigger**: Pull request to `main` branch
-**Purpose**: Route PRs to appropriate validation workflow
+**Purpose**: Route PRs to appropriate validation workflow and enforce security controls
 
 ### Flow:
-1. **Validate Job**
+1. **Security Check Job** (First Gate - Runs for all PRs except bot PRs)
+   - Generate GitHub App token for elevated permissions
+   - Checkout code with full history
+   - Check contributor type (Internal Caylent employee vs External contributor)
+   - **Security Control**: Block external contributors from modifying workflow files
+   - If external contributor modifies `.github/workflows/` files → **FAIL PR**
+   - If internal contributor → Allow workflow modifications
+
+2. **Validate Job** (Runs in parallel with security check)
    - Checkout code with full history
    - **Simulate merge** to test compatibility
    - Install system dependencies + ASDF + tools
@@ -14,7 +22,7 @@
    - Get changed files and update config
    - **Detect module changes** → Sets `IS_MODULE`, `MODULE_PATH`, `MODULE_TYPE`
 
-2. **Route to Validation**
+3. **Route to Validation** (Depends on validate job)
    - If `IS_MODULE=true` → Call `terraform-module-validation.yml`
    - If `IS_MODULE=false` → Call `non-terraform-validation.yml`
 
@@ -47,17 +55,17 @@
    - Checkout code + **simulate merge** on `caylent-tests` branch
    - Run Terraform tests
    - Send Slack notification for review
-   - **Manual approval** from code owners
+   - **Environment approval** from `merge-approval` environment (GitHub Environment protection)
    - **Auto-merge** PR on approval
 
 4. **Run Tests - External Contributors** (Depends: validate-module)
    - If contributor is external
-   - Requires `external-contributor-test-approval` environment
+   - Requires `external-contributor-test-approval` environment (GitHub Environment protection)
    - Checkout code + **simulate merge** on `external-tests` branch
    - Run same tests as internal
    - Send Slack notification
-   - **Manual approval** from code owners
-   - **Auto-merge** PR on approval
+   - **Environment approval** required from protected reviewers
+   - **Auto-merge** PR on approval (using `external-contributor-merge-approval` environment)
 
 5. **Post-Merge Validation** (Depends: successful merge)
    - Checkout main branch (no merge simulation needed)
@@ -68,7 +76,7 @@
    - Send Slack notification for QA approval
 
 6. **QA Certification** (Depends: post-merge-validation)
-   - **Manual QA approval** from code owners
+   - **Environment approval** from `qa-certification` environment (GitHub Environment protection)
    - **Trigger release workflow** with module details
 
 ---
@@ -95,7 +103,7 @@
    - Find code owners
    - Check contributor type
    - Send Slack notification
-   - **Manual approval** from code owners
+   - **Environment approval** from `merge-approval` environment (GitHub Environment protection)
    - **Auto-merge** PR on approval
 
 3. **Post-Merge Validation** (Depends: validate-non-terraform)
@@ -106,7 +114,7 @@
    - Send Slack notification for QA approval
 
 4. **QA Certification** (Depends: post-merge-validation)
-   - **Manual QA approval** from code owners
+   - **Environment approval** from `qa-certification` environment (GitHub Environment protection)
    - **Trigger release workflow** for non-terraform release
 
 ---
@@ -195,8 +203,27 @@
 ### Auto-Merge Conditions:
 - All validation tests pass
 - Security scans complete
-- Manual approval received
+- Environment approval received (via GitHub Environment protection rules)
 - Contributor type verified
+
+### GitHub Environment Protection Rules:
+The workflows use GitHub Environments for approval gates instead of issue-based manual approvals:
+
+1. **`merge-approval`**: Used for approving internal contributor PR merges
+   - Requires protected reviewers to approve before merge
+   - Applied to both terraform-module and non-terraform internal contributor flows
+
+2. **`external-contributor-test-approval`**: Used for approving external contributor test execution
+   - Requires protected reviewers to approve before running tests on external PRs
+   - Security gate to prevent malicious code execution
+
+3. **`external-contributor-merge-approval`**: Used for approving external contributor PR merges
+   - Requires protected reviewers to approve after tests pass
+   - Final gate before merging external contributor changes
+
+4. **`qa-certification`**: Used for final QA approval before release
+   - Requires QA team approval before triggering release workflow
+   - Applied to both terraform-module and non-terraform flows
 
 ### Merge Simulation Strategy:
 - **PR workflows**: Always simulate merge to test compatibility
@@ -204,3 +231,27 @@
 - **Release workflows**: Work directly on main branch
 - **Health checks**: Work directly on main branch
 - Each job uses unique branch names to avoid conflicts
+
+## Key Security Features Across All Workflows
+
+### 1. **GitHub Actions Security**
+- **SHA-Pinned Actions**: All third-party actions use commit SHAs instead of version tags
+- **Automated Security Management**: `make github-actions-security` discovers and manages action security
+- **Allowlist Generation**: Automatically generates GitHub Actions allowlist under 255-character limit
+- **Protected Actions**: Only pre-approved actions can be used in workflows
+
+### 2. **External Contributor Protection**
+- **Workflow Modification Block**: External contributors cannot modify `.github/workflows/` files
+- **Manual Test Approval**: External contributor tests require manual approval before execution
+- **Environment Isolation**: External tests run in protected `external-contributor-test-approval` environment
+- **Token Scoping**: Limited GitHub token permissions for external contributors
+
+### 3. **Code Security Scanning**
+- **Pre-Merge CodeQL**: Security analysis runs in parallel with validation on simulated merge
+- **Comprehensive Coverage**: Scans Go code for security vulnerabilities
+- **Integration**: CodeQL results block merge if security issues are found
+
+### 4. **Access Control**
+- **GitHub App Authentication**: Uses GitHub App tokens instead of personal access tokens
+- **Code Owner Enforcement**: CODEOWNERS file controls who can approve changes
+- **Multi-Stage Approval**: Separate validation, testing, and QA approval gates
