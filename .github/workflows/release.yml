@@ -153,7 +153,14 @@ jobs:
 
         else
           echo "🚀 Non-terraform release with semantic-release v10.1.0"
+          git fetch --tags --force
           git fetch origin
+
+          echo "--- DEBUG: Commits since last tag ---"
+          LATEST_TAG=$(git describe --tags --abbrev=0 || echo "")
+          echo "Latest tag: $LATEST_TAG"
+          git log --oneline "$LATEST_TAG"..HEAD || echo "No commits since last tag."
+          echo "--- END DEBUG ---"
 
           # Compute next version using semantic-release
           CURRENT_VERSION=$(cat VERSION || echo "0.0.0")
