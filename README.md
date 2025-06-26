@@ -35,7 +35,7 @@ module "generic_skeleton" {
 ```
 
 - Replace the module path (`skeletons/generic-skeleton`) with the one you need.
-- Replace the version (`v1.0.0`) with the exact tag to pin the module version.  
+- Replace the version (`v1.0.0`) with the exact [tag](https://github.com/caylent-solutions/terraform-modules/tags) to pin the module version.  
   ⚠️ **Pinning is required** — Terraform’s `git` source does not support version ranges.
 
 ---
